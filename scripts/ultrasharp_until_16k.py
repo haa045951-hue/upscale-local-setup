@@ -2,6 +2,7 @@ import argparse
 import csv
 import json
 import re
+import shutil
 import sys
 import time
 import uuid
@@ -12,14 +13,14 @@ import requests
 from PIL import Image
 
 
-# These batch outputs are intentionally huge. Pillow's default decompression
-# bomb guard blocks files above about 178M pixels even when they were generated
-# locally by this script.
-Image.MAX_IMAGE_PIXELS = None
+# Trusted local 16K+ upscale outputs can exceed Pillow's default pixel guard.
+Image.MAX_IMAGE_PIXELS = 1000000000
 
 ROOT = Path(__file__).resolve().parents[1]
 PORTABLE = ROOT / "ComfyUI_windows_portable"
 COMFY = PORTABLE / "ComfyUI"
+COMFY_INPUT = COMFY / "input"
+COMFY_WORK_INPUT = COMFY_INPUT / "until_16k_work"
 COMFY_OUTPUT = COMFY / "output"
 MODEL_NAME = "4x-UltraSharp.pth"
 MODEL_PATH = COMFY / "models" / "upscale_models" / MODEL_NAME
@@ -118,6 +119,7 @@ def log_row(log_path, row):
         "original_height",
         "pass",
         "multiplier",
+        "comfy_input_file",
         "output_width",
         "output_height",
         "saved_file",
@@ -140,6 +142,7 @@ def base_log_row(image_path, original_width, original_height):
         "original_height": original_height,
         "pass": "",
         "multiplier": "",
+        "comfy_input_file": "",
         "output_width": "",
         "output_height": "",
         "saved_file": "",
@@ -149,28 +152,25 @@ def base_log_row(image_path, original_width, original_height):
     }
 
 
-def upload_image(server, image_path):
-    with open(image_path, "rb") as handle:
-        files = {"image": (image_path.name, handle, "application/octet-stream")}
-        data = {"overwrite": "true", "type": "input", "subfolder": "ultrasharp_until_16k"}
-        response = requests.post(f"{server}/upload/image", files=files, data=data, timeout=180)
-    response.raise_for_status()
-    payload = response.json()
-    name = payload["name"]
-    subfolder = payload.get("subfolder") or ""
-    return f"{subfolder}/{name}" if subfolder else name
-
-
 def safe_prefix_part(value):
     safe = re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("._")
     return safe or "image"
 
 
-def build_prompt(uploaded_image, filename_prefix):
+def copy_to_comfy_input(source_image, image_stem, multiplier):
+    COMFY_WORK_INPUT.mkdir(parents=True, exist_ok=True)
+    stage = f"{multiplier}x"
+    filename = f"current_{safe_prefix_part(image_stem)}_{stage}_{uuid.uuid4().hex[:8]}.png"
+    target = COMFY_WORK_INPUT / filename
+    shutil.copy2(source_image, target)
+    return target, f"until_16k_work/{filename}"
+
+
+def build_prompt(comfy_image, filename_prefix):
     return {
         "1": {
             "class_type": "LoadImage",
-            "inputs": {"image": uploaded_image},
+            "inputs": {"image": comfy_image},
         },
         "2": {
             "class_type": "UpscaleModelLoader",
@@ -258,11 +258,10 @@ def stage_name(image_path, multiplier):
     return f"{image_path.stem}_{multiplier}x.png"
 
 
-def run_pass(server, client_id, source_image, image_stem, multiplier, timeout):
-    uploaded = upload_image(server, source_image)
+def run_pass(server, client_id, comfy_image, image_stem, multiplier, timeout):
     run_id = uuid.uuid4().hex[:12]
     prefix = f"api_ultrasharp_until_16k/{run_id}/{safe_prefix_part(image_stem)}_{multiplier}x"
-    prompt = build_prompt(uploaded, prefix)
+    prompt = build_prompt(comfy_image, prefix)
     prompt_id = queue_prompt(server, prompt, client_id)
     history = wait_for_history(server, prompt_id, timeout)
     return prompt_id, output_images(history)
@@ -298,12 +297,15 @@ def process_image(args, image_path, log_path, output_dir, client_id):
         multiplier *= 4
         destination = output_dir / stage_name(image_path, multiplier)
         prompt_id = ""
+        copied_input = ""
         try:
             print(f"  pass {pass_number}: {multiplier}x")
+            copied_input, comfy_image = copy_to_comfy_input(current_source, image_path.stem, multiplier)
+            print(f"    copied input: {copied_input}")
             prompt_id, image_infos = run_pass(
                 args.server,
                 client_id,
-                current_source,
+                comfy_image,
                 image_path.stem,
                 multiplier,
                 args.timeout,
@@ -312,22 +314,30 @@ def process_image(args, image_path, log_path, output_dir, client_id):
             if not args.keep_comfy_output:
                 cleanup_saved_image(saved_info)
             current_width, current_height = image_size(destination)
+            stop_after_this_pass = current_width >= TARGET_SIZE and current_height >= TARGET_SIZE
 
             row = base_log_row(image_path, original_width, original_height)
             row.update(
                 {
                     "pass": pass_number,
                     "multiplier": multiplier,
+                    "comfy_input_file": str(copied_input),
                     "output_width": current_width,
                     "output_height": current_height,
                     "saved_file": str(destination),
                     "prompt_id": prompt_id,
                     "status": "success",
-                    "message": "ok",
+                    "message": (
+                        "reached 16000x16000 minimum; stopping"
+                        if stop_after_this_pass
+                        else "stage complete; continuing"
+                    ),
                 }
             )
             log_row(log_path, row)
             print(f"    saved: {destination.name} ({current_width}x{current_height})")
+            if stop_after_this_pass:
+                print(f"    stop: reached {current_width}x{current_height}")
             current_source = destination
         except Exception as exc:
             row = base_log_row(image_path, original_width, original_height)
@@ -335,6 +345,7 @@ def process_image(args, image_path, log_path, output_dir, client_id):
                 {
                     "pass": pass_number,
                     "multiplier": multiplier,
+                    "comfy_input_file": str(copied_input),
                     "saved_file": str(destination),
                     "prompt_id": prompt_id,
                     "status": "failed",
