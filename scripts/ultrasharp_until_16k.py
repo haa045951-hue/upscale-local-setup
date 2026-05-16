@@ -29,12 +29,13 @@ INPUT_DIR = ROOT / "input_batch" / "until_16k"
 OUTPUT_DIR = ROOT / "output_batch" / "ultrasharp_min16k"
 LOG_PATH = ROOT / "logs" / "ultrasharp_until_16k.csv"
 SUPPORTED_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
-TARGET_SIZE = 16000
+MIN_TARGET = 16000
+RESIZE_THRESHOLD = 8000
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Run 4x-UltraSharp repeatedly until each image is at least 16000x16000."
+        description="Run 4x-UltraSharp until the smaller side reaches 8000, then Lanczos resize to 16K minimum."
     )
     parser.add_argument("--server", default=SERVER)
     parser.add_argument("--input-dir", default=str(INPUT_DIR))
@@ -258,6 +259,25 @@ def stage_name(image_path, multiplier):
     return f"{image_path.stem}_{multiplier}x.png"
 
 
+def final_name(image_path):
+    return f"{image_path.stem}_final_16k.png"
+
+
+def resize_to_min_target(source_image, destination):
+    width, height = image_size(source_image)
+    smaller_side = min(width, height)
+    if smaller_side <= 0:
+        raise RuntimeError(f"Invalid image size for resize: {source_image}")
+    scale = MIN_TARGET / smaller_side
+    target_width = max(MIN_TARGET, round(width * scale))
+    target_height = max(MIN_TARGET, round(height * scale))
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with Image.open(source_image) as image:
+        resized = image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+        resized.save(destination)
+    return target_width, target_height
+
+
 def run_pass(server, client_id, comfy_image, image_stem, multiplier, timeout):
     run_id = uuid.uuid4().hex[:12]
     prefix = f"api_ultrasharp_until_16k/{run_id}/{safe_prefix_part(image_stem)}_{multiplier}x"
@@ -276,23 +296,7 @@ def process_image(args, image_path, log_path, output_dir, client_id):
 
     print(f"Input: {image_path} ({original_width}x{original_height})")
 
-    if current_width >= TARGET_SIZE and current_height >= TARGET_SIZE:
-        row = base_log_row(image_path, original_width, original_height)
-        row.update(
-            {
-                "pass": 0,
-                "multiplier": 1,
-                "output_width": current_width,
-                "output_height": current_height,
-                "status": "skipped",
-                "message": "input already meets 16000x16000 minimum",
-            }
-        )
-        log_row(log_path, row)
-        print("  skipped: input already meets 16000x16000 minimum")
-        return
-
-    while current_width < TARGET_SIZE or current_height < TARGET_SIZE:
+    while min(current_width, current_height) < RESIZE_THRESHOLD:
         pass_number += 1
         multiplier *= 4
         destination = output_dir / stage_name(image_path, multiplier)
@@ -314,7 +318,6 @@ def process_image(args, image_path, log_path, output_dir, client_id):
             if not args.keep_comfy_output:
                 cleanup_saved_image(saved_info)
             current_width, current_height = image_size(destination)
-            stop_after_this_pass = current_width >= TARGET_SIZE and current_height >= TARGET_SIZE
 
             row = base_log_row(image_path, original_width, original_height)
             row.update(
@@ -328,16 +331,16 @@ def process_image(args, image_path, log_path, output_dir, client_id):
                     "prompt_id": prompt_id,
                     "status": "success",
                     "message": (
-                        "reached 16000x16000 minimum; stopping"
-                        if stop_after_this_pass
-                        else "stage complete; continuing"
+                        "smaller side reached resize threshold; switching to Lanczos resize"
+                        if min(current_width, current_height) >= RESIZE_THRESHOLD
+                        else "AI 4x stage complete; continuing"
                     ),
                 }
             )
             log_row(log_path, row)
             print(f"    saved: {destination.name} ({current_width}x{current_height})")
-            if stop_after_this_pass:
-                print(f"    stop: reached {current_width}x{current_height}")
+            if min(current_width, current_height) >= RESIZE_THRESHOLD:
+                print(f"    resize mode: smaller side reached {min(current_width, current_height)}")
             current_source = destination
         except Exception as exc:
             row = base_log_row(image_path, original_width, original_height)
@@ -354,6 +357,25 @@ def process_image(args, image_path, log_path, output_dir, client_id):
             )
             log_row(log_path, row)
             raise
+
+    final_destination = output_dir / final_name(image_path)
+    print(f"  resize mode: Lanczos resize from {current_width}x{current_height}")
+    final_width, final_height = resize_to_min_target(current_source, final_destination)
+    row = base_log_row(image_path, original_width, original_height)
+    row.update(
+        {
+            "pass": "final_resize",
+            "multiplier": multiplier,
+            "output_width": final_width,
+            "output_height": final_height,
+            "saved_file": str(final_destination),
+            "status": "success",
+            "message": "final Lanczos resize to 16000px smaller side; stopping",
+        }
+    )
+    log_row(log_path, row)
+    print(f"  final saved: {final_destination} ({final_width}x{final_height})")
+    print(f"  stop: final output meets minimum {MIN_TARGET}x{MIN_TARGET}")
 
 
 def main():

@@ -6,7 +6,7 @@ for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI"
 set "PYTHON=%ROOT%\ComfyUI_windows_portable\python_embeded\python.exe"
 
 echo.
-echo === 4x-UltraSharp until minimum 16K batch ===
+echo === 4x-UltraSharp plus final Lanczos 16K batch ===
 echo Input:  %ROOT%\input_batch\until_16k
 echo Output: %ROOT%\output_batch\ultrasharp_min16k
 echo.
