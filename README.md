@@ -40,6 +40,26 @@ Hardware target:
 - API batch runner: `scripts\comfy_batch_upscale.py`
 - PowerShell and BAT launchers for each batch category
 
+## License And Use
+
+The files in this repository are released under the MIT License. That covers the setup scripts, batch runner, workflow JSON files, and documentation committed here. See `LICENSE`.
+
+This repository does not redistribute ComfyUI, custom nodes, model checkpoints, VAE files, or upscaler weights. The setup scripts download those files from their upstream projects, and each downloaded component remains under its own license or model terms.
+
+Third-party components used by the setup scripts:
+
+| Component | Source | License / terms note |
+| --- | --- | --- |
+| ComfyUI | `https://github.com/Comfy-Org/ComfyUI` | GPL-3.0 upstream project |
+| ComfyUI Manager | `https://github.com/Comfy-Org/ComfyUI-Manager` | GPL-3.0 upstream project |
+| Ultimate SD Upscale node | `https://github.com/ssitu/ComfyUI_UltimateSDUpscale` | Review upstream repository terms before redistributing or commercial use |
+| ControlNet Aux | `https://github.com/Fannovel16/comfyui_controlnet_aux` | Apache-2.0 upstream project |
+| WAS Node Suite | `https://github.com/WASasquatch/was-node-suite-comfyui` | MIT upstream project |
+| Real-ESRGAN upscalers | `https://github.com/xinntao/Real-ESRGAN` | BSD-3-Clause upstream project |
+| Other upscalers/checkpoints/VAE files | Hugging Face, Civitai, and project release URLs listed in the scripts/docs | Check each model page before redistribution, hosted services, or commercial use |
+
+Generated images are not automatically licensed by this repository. Their allowed use depends on the input image rights, selected model/checkpoint terms, and any applicable platform or local rules.
+
 ## Folder Layout
 
 Inputs:
