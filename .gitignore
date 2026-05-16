@@ -1,0 +1,29 @@
+# Local ComfyUI install and downloaded archives
+ComfyUI_windows_portable/
+models_to_download/
+
+# User input/output and run logs
+input/*
+!input/.gitkeep
+input_batch/**/*
+!input_batch/**/
+!input_batch/**/.gitkeep
+output/*
+!output/.gitkeep
+output_batch/**/*
+!output_batch/**/
+!output_batch/**/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Python/cache/runtime noise
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Windows/editor noise
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,55 @@
+This file is kept as a fallback checklist for manual model downloads.
+
+Destination for SD 1.5 checkpoints:
+ComfyUI_windows_portable\ComfyUI\models\checkpoints
+
+Destination for VAE:
+ComfyUI_windows_portable\ComfyUI\models\vae
+
+If a download is blocked or fails, download the model manually from the listed source and place it in the listed destination.
+
+RealisticVisionV60:
+- Recommended file: realisticVisionV60B1_v60B1VAE.safetensors
+- Source: https://civitai.com/models/4201/realistic-vision-v60-b1
+- Direct API version used: https://civitai.com/api/download/models/245598
+- Destination: ComfyUI_windows_portable\ComfyUI\models\checkpoints
+
+EpicRealism:
+- Recommended file: epicrealism_naturalSinRC1VAE.safetensors
+- Source: https://civitai.com/models/25694/epicrealism
+- Direct API version used: https://civitai.com/api/download/models/143906
+- Destination: ComfyUI_windows_portable\ComfyUI\models\checkpoints
+
+MeinaMix:
+- Recommended file: meinamix_v12Final.safetensors
+- Source: https://civitai.com/models/7240/meinamix
+- Civitai direct API checked: https://civitai.com/api/download/models/948574
+- Note: Civitai redirected this download to login on this PC, so the installed file was downloaded from this public Hugging Face mirror:
+  https://huggingface.co/andro-flock/MeinaMix-V12_-Final/resolve/main/original_sd_checkpoint.safetensors
+- Destination: ComfyUI_windows_portable\ComfyUI\models\checkpoints
+
+CounterfeitV3:
+- Recommended file: Counterfeit-V3.0_fix_fp16.safetensors
+- Source: https://huggingface.co/Lank1906/Counterfeit-V3.0
+- Direct file used: https://huggingface.co/Lank1906/Counterfeit-V3.0/resolve/main/Counterfeit-V3.0_fix_fp16.safetensors
+- Destination: ComfyUI_windows_portable\ComfyUI\models\checkpoints
+
+DreamShaper 8:
+- Recommended file: dreamshaper_8.safetensors
+- Source: https://civitai.com/models/4384/dreamshaper
+- Direct API version used: https://civitai.com/api/download/models/128713
+- Destination: ComfyUI_windows_portable\ComfyUI\models\checkpoints
+
+revAnimated:
+- Recommended file: revAnimated_v122.safetensors
+- Source: https://civitai.com/models/7371/rev-animated
+- Civitai direct API checked: https://civitai.com/api/download/models/474453
+- Note: Civitai redirected this download to login on this PC, so the installed file was downloaded from this public Hugging Face mirror:
+  https://huggingface.co/botp/ReVAnimated/resolve/main/revAnimated_v122.safetensors
+- Destination: ComfyUI_windows_portable\ComfyUI\models\checkpoints
+
+SD 1.5 VAE:
+- Recommended file: vae-ft-mse-840000-ema-pruned.safetensors
+- Source: https://huggingface.co/stabilityai/sd-vae-ft-mse-original
+- Direct file used: https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors
+- Destination: ComfyUI_windows_portable\ComfyUI\models\vae
