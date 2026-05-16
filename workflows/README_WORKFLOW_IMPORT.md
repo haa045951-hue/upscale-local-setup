@@ -29,7 +29,7 @@
 - Keep source images in:
 
   ```text
-  D:\Projects\Upscale\input
+  input
   ```
 
 ## Output Location
@@ -37,13 +37,13 @@
 ComfyUI normally saves generated images under:
 
 ```text
-D:\Projects\Upscale\ComfyUI_windows_portable\ComfyUI\output
+ComfyUI_windows_portable\ComfyUI\output
 ```
 
 This workspace also has a separate folder for your own exports and comparisons:
 
 ```text
-D:\Projects\Upscale\output
+output
 ```
 
 ## Test Before A Full 16K Render
