@@ -12,6 +12,7 @@ for %%D in (
     "input_batch\anime"
     "input_batch\digital_art"
     "input_batch\safe_restore"
+    "input_batch\until_16k"
     "output_batch\photos\4x"
     "output_batch\photos\final"
     "output_batch\anime\4x"
@@ -20,6 +21,7 @@ for %%D in (
     "output_batch\digital_art\final"
     "output_batch\safe_restore\4x"
     "output_batch\safe_restore\final"
+    "output_batch\ultrasharp_min16k"
 ) do (
     if not exist "%ROOT%\%%~D" mkdir "%ROOT%\%%~D"
     if errorlevel 1 (

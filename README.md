@@ -198,6 +198,40 @@ To redownload missing SD 1.5 checkpoints and the VAE later:
 scripts\download_sd15_models.bat
 ```
 
+## Run 4x-UltraSharp Until Minimum 16K
+
+For a model-only upscale path with no Stable Diffusion, no Ultimate SD Upscale, and no resize/crop/stretch step, put images under:
+
+```text
+input_batch\until_16k
+```
+
+Then run:
+
+```bat
+scripts\run_ultrasharp_until_16k.bat
+```
+
+The script uses only `4x-UltraSharp.pth`, saves every needed 4x stage, and stops as soon as both output dimensions are at least `16000`. Outputs are written to:
+
+```text
+output_batch\ultrasharp_min16k
+```
+
+Example output names:
+
+```text
+myimage_4x.png
+myimage_16x.png
+myimage_64x.png
+```
+
+Only stages that were actually required are created. The log is written to:
+
+```text
+logs\ultrasharp_until_16k.csv
+```
+
 ## Output Filenames
 
 If input is:
