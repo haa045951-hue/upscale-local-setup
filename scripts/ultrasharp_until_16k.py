@@ -12,6 +12,11 @@ import requests
 from PIL import Image
 
 
+# These batch outputs are intentionally huge. Pillow's default decompression
+# bomb guard blocks files above about 178M pixels even when they were generated
+# locally by this script.
+Image.MAX_IMAGE_PIXELS = None
+
 ROOT = Path(__file__).resolve().parents[1]
 PORTABLE = ROOT / "ComfyUI_windows_portable"
 COMFY = PORTABLE / "ComfyUI"
